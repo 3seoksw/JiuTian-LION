@@ -85,6 +85,74 @@ pip install -r requirements.txt
 
 We provide inference examples for **Image-Level** and **Region-Level** tasks in `playground.ipynb`.
 
+### Training
+
+We provide a training script and instruction to do stage4 training as an example.
+
+- Download dataset from [huggingface](https://huggingface.co/datasets/daybreaksly/LION-data-train)
+- Download images and organized them in one folder:
+
+Please download the following datasets:
+
+- **Training images**
+  - `OCR-VQA`
+  - `coco-2014`
+  - `coco-2017`
+  - `okvqa-2014`
+  - `textcaps`
+  - `vqav2-2014`
+  - `visual_genome`
+
+After downloading, place all these folders under a **single directory**.  
+For example:
+
+```bash
+/path/to/data/images/
+├── OCR-VQA/images
+├── coco/images/train2014
+├── coco_2017/train2017
+├── okvqa/images/train/train2014
+├── textcaps/images/train_images
+├── vqav2/images/train2014
+├── visual_genome/VG_100K
+└── visual_genome/VG_100K_2
+
+---
+```
+In your config file, add the unified image folder path:
+
+```yaml
+train_datasets:
+  - ann_path: "/path/to/image_level_data.json"
+    vis_root: "/path/to/image_folder"
+    is_train: true
+    sample_ratio: 1
+  - ann_path: "/path/to/region_level_data.json"
+    vis_root: "/path/to/image_folder"
+    is_train: true
+    sample_ratio: 1
+```
+
+
+
+- Configure training with `configs/lion_train_stage4.yaml` (update model paths and dataset paths)
+- Run multi‑GPU training:
+
+```
+cd JiuTian-LION
+bash scripts/start_train.sh
+```
+
+Or manually:
+
+```
+CUDA_VISIBLE_DEVICES=0,1,2,3 TOKENIZERS_PARALLELISM=true \
+  torchrun --master_port 12345 --nproc_per_node=4 \
+  train.py --cfg-path configs/lion_train_stage4.yaml
+```
+
+Outputs and checkpoints are written to `outputs/lion_stage4/<timestamp>/` by default.
+
 ## Evaluation results
 
  For <b>image-level</b> tasks, we focus on image captioning and Visual Question Answering (VQA). For <b>region-level</b> tasks, we evaluate LION on three REC datasets including RefCOCO, RefCOCO+ and RefCOCOg. The results, detailed in Table 1~2, highlight LION's superior performance compared to baseline models.

@@ -205,18 +205,21 @@ class LIONT5InstructAdapter(BaseModel):
         """
         
         self._init_ram()
-        if isinstance(images, Image):
-            images = [images]
-        images = torch.stack([self.ram_processor(img) for img in images]).to(self.device)
+        if not isinstance(images, torch.Tensor):
+            if isinstance(images, Image):
+                images = [images]
+            images = torch.stack([self.ram_processor(img) for img in images]).to(self.device)
         tags = self.ram_model.generate_tag(images, threshold=0.85)[0]
         return [t.replace(" |",",") for t in tags]
     
     def _insert_tags(self, samples, prompt):
         if self.enable_semantic_tags:
             assert self.tag_prompt is not None, "Please provide Tags prompt."
-            if "tags" not in samples:
-                samples = self._generate_tags(samples)
-            prompt = [self.tag_prompt.format(tags) + tin for tags, tin in zip(samples["tags"], prompt)]
+            if "tags" in samples:
+                tags = samples["tags"]
+            else:
+                tags = self.generate_tags(samples["ram_image"])
+            prompt = [self.tag_prompt.format(tags) + tin for tags, tin in zip(tags, prompt)]
         return prompt
     
     def _insert_softTagHint(self, samples, input_tokens, inputs_embeds):
@@ -251,7 +254,6 @@ class LIONT5InstructAdapter(BaseModel):
             {"params": p_boost, "weight_decay": weight_decay, "lr_scale": lr_scale*self.boost_lr_scale},
             {"params": p_boost_non_wd, "weight_decay": 0, "lr_scale": lr_scale*self.boost_lr_scale},
         ]
-        logging.info(f"boost params:{boost_name}")
         return optim_params
 
     def encode_img(self, image, question):
